@@ -15,8 +15,12 @@ COPY . /app
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
-# Expose the port for the bot
-EXPOSE 5000
+# Copy crontab file
+COPY crontab.txt /etc/cron.d/miHoyo-cron
 
-# Default command to run bot.py
-CMD ["python", "-m", "discord_bot.bot"]
+# Add cron job
+RUN chmod 0644 /etc/cron.d/miHoyo-cron \
+    && crontab /etc/cron.d/miHoyo-cron
+
+# Start cron service
+CMD ["crond", "-f"]
