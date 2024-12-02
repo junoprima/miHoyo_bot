@@ -1,0 +1,17 @@
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+
+# Ignore logs
+logs/
+
+# Ignore environment files
+.env
+firebase_key.json
+
+# Ignore Docker-related files
+*.log
