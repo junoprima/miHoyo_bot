@@ -167,7 +167,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## ❤️ Acknowledgments
 
-- **Guide on Cookie Retrieval**: Special thanks to the author of [this guide](https://mail.google.com/mail/u/0/#search/github/FMfcgzQXJQKRDwVXbMsXVJkztFLRkBbg) for inspiration and instructions. Full credit to the author for their work.
+- **Guide on Cookie Retrieval**: Special thanks to the author of [this guide](https://github.com/torikushiii/hoyolab-auto/tree/main/services/google-script) for inspiration and instructions. Full credit to the author for their work.
 - Icons and assets are owned by Hoyoverse.
 
 ---
