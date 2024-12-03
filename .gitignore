@@ -9,6 +9,9 @@ env/
 # Ignore logs
 logs/
 
+# Ignore sensitive files
+config.json
+
 # Ignore environment files
 .env
 firebase_key.json
