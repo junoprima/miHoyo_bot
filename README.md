@@ -30,16 +30,13 @@ miHoyo Bot is a versatile, feature-rich Discord bot designed to automate game ch
 
 ```plaintext
 miHoyo_bot/
+├── cogs/
+│   ├── admin.py        # Admin-related commands (e.g., reload)
+│   ├── accounts.py     # Account-related commands (e.g., list_accounts)
+│   ├── checkin.py      # Commands related to check-in functionality
+│   ├── cookies.py      # Cookie management commands (add/edit/delete)
 ├── discord_bot/
-│   ├── commands/
-│   │   ├── add_cookie.py
-│   │   ├── delete_cookie.py
-│   │   ├── edit_cookie.py
-│   │   ├── list_accounts.py
-│   │   ├── reload.py
-│   │   ├── test_command.py
-│   │   ├── trigger_checkin.py
-│   │   └── bot.py
+│   ├── bot.py
 ├── games/
 │   ├── game.py
 ├── logs/
@@ -170,7 +167,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## ❤️ Acknowledgments
 
-- Special thanks to the open-source community for their incredible libraries and tools that made this project possible.
+- **Guide on Cookie Retrieval**: Special thanks to the author of [this guide](https://mail.google.com/mail/u/0/#search/github/FMfcgzQXJQKRDwVXbMsXVJkztFLRkBbg) for inspiration and instructions. Full credit to the author for their work.
 - Icons and assets are owned by Hoyoverse.
 
 ---
