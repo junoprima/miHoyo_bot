@@ -2,10 +2,24 @@ import logging
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
+from dotenv import load_dotenv
 
-# Load constants
-with open("constants.json", "r") as file:
-    DEFAULT_CONSTANTS = json.load(file)
+# Load environment variables
+load_dotenv()
+
+# Get the CONSTANTS_PATH environment variable
+constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")  # Default to /app/constants.json if not set
+
+# Check if the file exists
+if not os.path.isfile(constants_path):
+    raise FileNotFoundError(f"Constants file not found at: {constants_path}")
+
+print(f"Using constants file at: {constants_path}")
+
+# Load the constants file
+with open(constants_path, "r") as file:
+    constants = file.read()  # Replace with actual loading logic
 
 class Game:
     def __init__(self, name, config, cookies):

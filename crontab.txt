@@ -1,2 +1,1 @@
-# Cron job to run main.py every day at 23:10
-10 23 * * * python /app/main.py >> /app/logs/cron.log 2>&1
+* * * * * /usr/local/bin/python3 /app/main.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log

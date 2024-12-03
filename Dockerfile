@@ -5,6 +5,9 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED 1
 ENV TZ=Asia/Bangkok
 
+# Install dotenv if not already installed
+RUN pip install python-dotenv
+
 # Set the working directory
 WORKDIR /app
 
