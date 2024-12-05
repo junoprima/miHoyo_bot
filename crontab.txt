@@ -1,0 +1,1 @@
+5 23 * * * /usr/local/bin/python3 /app/main.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log

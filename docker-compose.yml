@@ -1,0 +1,32 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: miHoyo_Bot
+    command: python -m discord_bot.bot
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - FIREBASE_KEY=/app/firebase_key.json
+      - CONSTANTS_PATH=/app/constants.json
+      - DISCORD_GUILD_ID=${DISCORD_GUILD_ID}
+    volumes:
+      - .:/app
+    restart: always
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile-cron
+    container_name: miHoyo_CheckIn_Scheduler
+    environment:
+      - FIREBASE_KEY=/app/firebase_key.json
+      - CONSTANTS_PATH=/app/constants.json
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "pgrep", "cron"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
