@@ -220,16 +220,18 @@ class Game:
             return None
         
     def fix_region(self, region):
-        """Map the region code to a user-friendly region name."""
+        """Map internal region identifiers to readable names."""
         region_map = {
-            "os_cht": "TW",  # Taiwan
-            "os_asia": "SEA",  # Southeast Asia
-            "os_euro": "EU",  # Europe
-            "os_usa": "NA",  # North America
-            "prod_gf_sg": "TW",  # Taiwan
-            "prod_gf_jp": "SEA",  # Southeast Asia
-            "prod_gf_eu": "EU",  # Europe
-            "prod_gf_us": "NA",  # North America
+            # Common regions for Hoyoverse games
+            "os_cht": "TW",
+            "os_asia": "SEA",
+            "os_euro": "EU",
+            "os_usa": "NA",
+            # Specific mappings for Honkai Star Rail
+            "prod_official_asia": "SEA",
+            "prod_official_usa": "NA",
+            "prod_official_eur": "EU",
+            "prod_official_cht": "TW",
         }
         return region_map.get(region, "Unknown")
 
