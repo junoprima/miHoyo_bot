@@ -10,7 +10,7 @@ from utils.discord import send_discord_notification
 load_dotenv()
 
 # Get the CONSTANTS_PATH environment variable
-constants_path = os.getenv("CONSTANTS_PATH", "constants.json")  # Default to constants.json if not set
+constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")  # Default to constants.json if not set
 
 # Helper function to load constants
 def load_constants(file_path):
