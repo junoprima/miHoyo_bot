@@ -220,20 +220,18 @@ class Game:
             return None
         
     def fix_region(self, region):
-        """Map internal region identifiers to readable names."""
-        region_map = {
-            # Common regions for Hoyoverse games
-            "os_cht": "TW",
-            "os_asia": "SEA",
-            "os_euro": "EU",
-            "os_usa": "NA",
-            # Specific mappings for Honkai Star Rail
-            "prod_official_asia": "SEA",
-            "prod_official_usa": "NA",
-            "prod_official_eur": "EU",
-            "prod_official_cht": "TW",
-        }
-        return region_map.get(region, "Unknown")
+        logging.debug(f"Mapping region code: {region}")
+        """Map the region code to a user-friendly region name."""
+        if region in ["os_cht", "prod_gf_sg", "prod_official_cht"]:
+            return "TW"  # Taiwan
+        elif region in ["os_asia", "prod_gf_jp", "prod_official_asia"]:
+            return "SEA"  # Southeast Asia
+        elif region in ["eur01", "os_euro", "prod_gf_eu", "prod_official_eur"]:
+            return "EU"  # Europe
+        elif region in ["usa01", "os_usa", "prod_gf_us", "prod_official_usa"]:
+            return "NA"  # North America
+        else:
+            return "Unknown"
 
     def get_sign_info(self, cookie):
         """Retrieve sign-in info for the account."""
