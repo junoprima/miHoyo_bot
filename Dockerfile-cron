@@ -32,7 +32,7 @@ RUN pip install --upgrade pip \
 COPY . /app/
 
 # Create dynamic cron job file
-COPY crontab.new.txt /etc/cron.d/mihoyo-cron
+COPY crontab.txt /etc/cron.d/mihoyo-cron
 
 # Set proper permissions for cron
 RUN chmod 0644 /etc/cron.d/mihoyo-cron \
@@ -56,7 +56,7 @@ CRON_SCHEDULE="${CHECKIN_CRON_SCHEDULE:-5 23 * * *}"\n\
 \n\
 # Create cron job with environment variables\n\
 echo "Creating cron job with schedule: $CRON_SCHEDULE"\n\
-echo "$CRON_SCHEDULE cd /app && python main_new.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log" > /etc/cron.d/mihoyo-cron\n\
+echo "$CRON_SCHEDULE cd /app && python main.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log" > /etc/cron.d/mihoyo-cron\n\
 echo "" >> /etc/cron.d/mihoyo-cron\n\
 \n\
 # Set permissions\n\
