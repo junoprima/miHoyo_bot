@@ -248,6 +248,40 @@ class DatabaseOperations:
 
             return grouped
 
+    async def get_guild_accounts_for_checkin(self, guild_id: int) -> Dict[str, List[Account]]:
+        """Get all active accounts for a specific guild grouped by game for check-in process"""
+        async with db_manager.get_session() as session:
+            stmt = (
+                select(Account)
+                .options(joinedload(Account.game), joinedload(Account.guild))
+                .where(and_(Account.is_active == True, Account.guild_id == guild_id))
+            )
+            result = await session.execute(stmt)
+            accounts = result.scalars().all()
+
+            # Group by game name
+            grouped = {}
+            for account in accounts:
+                game_name = account.game.name
+                if game_name not in grouped:
+                    grouped[game_name] = []
+                grouped[game_name].append(account)
+
+            return grouped
+
+    async def get_all_guilds_with_accounts(self) -> List[Guild]:
+        """Get all guilds that have active accounts"""
+        async with db_manager.get_session() as session:
+            stmt = (
+                select(Guild)
+                .join(Account)
+                .where(Account.is_active == True)
+                .distinct()
+            )
+            result = await session.execute(stmt)
+            guilds = result.scalars().all()
+            return guilds
+
     async def update_account_details(self, account_id: int, uid: str, nickname: str,
                                    rank: int, region: str) -> None:
         """Update account game details"""

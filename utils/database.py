@@ -41,10 +41,23 @@ async def edit_cookie_in_database(guild_id, user_id, game_name, account_name, ne
     except:
         return False
 
-async def fetch_cookies_from_database(guild_id):
+async def fetch_cookies_from_database(guild_id: int):
     from database.operations import db_ops
     try:
-        accounts = await db_ops.get_all_accounts(guild_id)
-        return accounts
-    except:
-        return []
+        # Get accounts for this guild organized by game
+        accounts_by_game = await db_ops.get_guild_accounts_for_checkin(guild_id)
+
+        # Convert Account objects to dictionaries for compatibility
+        cookies = {}
+        for game_name, accounts in accounts_by_game.items():
+            cookies[game_name] = []
+            for account in accounts:
+                cookies[game_name].append({
+                    'name': account.name,
+                    'cookie': account.decrypted_cookie
+                })
+
+        return cookies
+    except Exception as e:
+        print(f'Error fetching cookies for guild {guild_id}: {e}')
+        return {}

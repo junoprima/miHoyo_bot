@@ -20,7 +20,7 @@ class GameManager:
     def __init__(self):
         self.session = requests.Session()
 
-    async def process_game_checkins(self, game_name: str, game_config: Dict[str, Any],
+    async def process_game_checkins(self, guild_id: int, game_name: str, game_config: Dict[str, Any],
                                   accounts: List[Dict[str, str]]) -> List[Dict[str, Any]]:
         """Process check-ins for all accounts of a specific game"""
         successes = []
@@ -31,7 +31,7 @@ class GameManager:
         for account in accounts:
             try:
                 # Process single account
-                result = await self.process_single_account(game, account, game_name)
+                result = await self.process_single_account(guild_id, game, account, game_name)
                 if result:
                     successes.append(result)
 
@@ -46,7 +46,7 @@ class GameManager:
 
         return successes
 
-    async def process_single_account(self, game: Game, account: Dict[str, str],
+    async def process_single_account(self, guild_id: int, game: Game, account: Dict[str, str],
                                    game_name: str) -> Optional[Dict[str, Any]]:
         """Process check-in for a single account with database logging"""
         try:
@@ -148,7 +148,7 @@ class GameManager:
             }
 
             # Send Discord notification
-            send_discord_notification(success_data)
+            await send_discord_notification(guild_id, success_data)
 
             return success_data
 
