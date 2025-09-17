@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from main import run_daily_checkin  # Assuming main.py contains the logic for check-ins
 
 class CheckIn(commands.Cog):
     """Cog for triggering the daily check-in."""
@@ -13,10 +12,9 @@ class CheckIn(commands.Cog):
     async def trigger_checkin(self, interaction: discord.Interaction):
         """Manually trigger the daily check-in process."""
         try:
-            await interaction.response.send_message("Daily check-in triggered!")
-            run_daily_checkin()
+            await interaction.response.send_message("✅ Daily check-in command received! This feature will be available soon.", ephemeral=True)
         except Exception as e:
-            await interaction.followup.send(f"Failed to trigger check-in: {e}")
+            await interaction.response.send_message(f"❌ Failed to trigger check-in: {e}", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckIn(bot))

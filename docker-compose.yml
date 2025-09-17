@@ -4,9 +4,9 @@ services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile.new
-    container_name: miHoYo_Bot_SQLite
-    command: python -m discord_bot.bot_new
+      dockerfile: Dockerfile
+    container_name: miHoYo_bot
+    command: python -m discord_bot.bot
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
       - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
@@ -32,7 +32,7 @@ services:
   scheduler:
     build:
       context: .
-      dockerfile: Dockerfile-cron.new
+      dockerfile: Dockerfile-cron
     container_name: miHoYo_CheckIn_Scheduler_SQLite
     environment:
       - DB_PATH=/app/data/mihoyo_bot.db
