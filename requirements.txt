@@ -1,3 +1,7 @@
 discord.py
 firebase-admin
 python-dotenv
+asyncpg
+sqlalchemy[asyncio]
+alembic
+cryptography

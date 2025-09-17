@@ -1,1 +1,6 @@
-5 23 * * * /usr/local/bin/python3 /app/main.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log
+# miHoYo Bot Cron Job - SQLite Version
+# Runs daily check-in process with database integration
+# Default: 5 23 * * * (11:05 PM daily)
+# This will be overwritten by entrypoint.sh with environment variable
+
+5 23 * * * cd /app && python main_new.py >> /app/logs/cron.log 2>&1 && date >> /app/logs/cron.log

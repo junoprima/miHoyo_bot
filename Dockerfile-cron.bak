@@ -1,0 +1,29 @@
+# Use an official Python runtime as a parent image
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV TZ=Asia/Bangkok
+
+# Install dotenv if not already installed
+RUN pip install python-dotenv
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install dependencies and cron
+RUN apt-get update && apt-get install -y cron procps && pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# Copy the cron job file
+COPY crontab.txt /etc/cron.d/miHoyo-cron
+
+# Add cron job
+RUN chmod 0644 /etc/cron.d/miHoyo-cron \
+    && crontab /etc/cron.d/miHoyo-cron
+
+# Start cron service
+CMD ["cron", "-f"]
