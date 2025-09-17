@@ -4,7 +4,7 @@ import io
 import asyncio
 import logging
 from utils.database import fetch_cookies_from_database
-from games.game_new import GameManager
+from games.game import GameManager
 from utils.logger import setup_logging
 from database.connection import init_database, db_manager
 from database.operations import db_ops

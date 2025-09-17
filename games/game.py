@@ -4,7 +4,12 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from utils.discord import send_discord_notification
 from database.operations import db_ops
-# Game class is defined below - no need for circular import
+# Simple Game class for compatibility
+class Game:
+    def __init__(self, game_name: str, game_config: Dict[str, Any], accounts: List[Dict[str, str]]):
+        self.game_name = game_name
+        self.game_config = game_config
+        self.accounts = accounts
 
 logger = logging.getLogger(__name__)
 
