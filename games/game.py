@@ -4,7 +4,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from utils.discord import send_discord_notification
 from database.operations import db_ops
-from games.game import Game  # Import original Game class for compatibility
+# Game class is defined below - no need for circular import
 
 logger = logging.getLogger(__name__)
 
