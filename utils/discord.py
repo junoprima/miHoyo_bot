@@ -61,7 +61,7 @@ def create_checkin_embed(success: Dict[str, Any]):
         "color": 16748258,
         "title": f"{success['assets']['game']} Daily Check-In",
         "author": {
-            "name": success["name"],
+            "name": f"{success['assets']['author']} • {success['name']}",
             "icon_url": success["assets"]["icon"]
         },
         "fields": [
