@@ -39,10 +39,24 @@ async def send_discord_notification(guild_id: int, success_data: Dict[str, Any])
             logger.error(f"Could not find channel {channel_id} in guild {guild_id}")
             return False
 
+        # Set bot identity to game character (like original webhook)
+        guild = channel.guild
+        game_character_name = success_data.get('assets', {}).get('author', 'miHoYo CheckIn')
+        game_character_avatar = success_data.get('assets', {}).get('icon', '')
+
+        # Try to update bot nickname to game character name
+        try:
+            if guild.me.display_name != game_character_name:
+                await guild.me.edit(nick=game_character_name)
+        except discord.Forbidden:
+            pass  # Bot doesn't have permission to change nickname
+        except Exception:
+            pass  # Ignore other errors
+
         # Create embed
         embed = create_checkin_embed(success_data)
 
-        # Send notification
+        # Send notification (bot will appear as game character if nickname was set)
         await channel.send(embed=embed)
         logger.info(f"Check-in notification sent to {channel.name} in {channel.guild.name}")
         return True
@@ -61,7 +75,7 @@ def create_checkin_embed(success: Dict[str, Any]):
         "color": 16748258,
         "title": f"{success['assets']['game']} Daily Check-In",
         "author": {
-            "name": f"{success['assets']['author']} • {success['name']}",
+            "name": success["name"],
             "icon_url": success["assets"]["icon"]
         },
         "fields": [
