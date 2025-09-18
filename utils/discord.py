@@ -51,69 +51,39 @@ async def send_discord_notification(guild_id: int, success_data: Dict[str, Any])
         logger.error(f"Error sending Discord notification: {e}")
         return False
 
-def create_checkin_embed(success_data: Dict[str, Any]):
-    """Create Discord embed matching the original prettier style from image.png"""
+def create_checkin_embed(success: Dict[str, Any]):
+    """Create Discord embed using EXACT original format from before session started"""
     import discord
     from datetime import datetime, timezone
 
-    # Extract data with proper fallbacks
-    account_name = success_data.get("name", "Unknown")
-    game_name = success_data.get("assets", {}).get("game", "Unknown Game")
-    game_author = success_data.get("assets", {}).get("author", "miHoYo")
-    game_icon = success_data.get("assets", {}).get("icon", "")
+    # Use EXACT same embed structure as original - just convert to discord.Embed
+    embed_dict = {
+        "color": 16748258,
+        "title": f"{success['assets']['game']} Daily Check-In",
+        "author": {
+            "name": success["name"],
+            "icon_url": success["assets"]["icon"]
+        },
+        "fields": [
+            {"name": "Nickname", "value": success["account"]["nickname"], "inline": True},
+            {"name": "UID", "value": success["account"]["uid"], "inline": True},
+            {"name": "Rank", "value": success["account"]["rank"], "inline": True},
+            {"name": "Region", "value": success["account"]["region"], "inline": True},
+            {
+                "name": "Today's Reward",
+                "value": f"{success['award']['name']} x{success['award']['count']}",
+                "inline": True,
+            },
+            {"name": "Total Check-Ins", "value": success["total"], "inline": True},
+            {"name": "Result", "value": success["result"], "inline": False},
+        ],
+        "thumbnail": {"url": success["award"]["icon"]},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "footer": {"text": f"{success['assets']['game']} Daily Check-In"},
+    }
 
-    account = success_data.get("account", {})
-    nickname = account.get("nickname", "Unknown")
-    uid = account.get("uid", "N/A")
-    rank = str(account.get("rank", "N/A"))
-    region = account.get("region", "N/A")
-
-    award = success_data.get("award", {})
-    reward_name = award.get("name", "Unknown Reward")
-    reward_count = award.get("count", 0)
-    reward_icon = award.get("icon", "")
-
-    total_checkins = str(success_data.get("total", 0))
-    result_message = success_data.get("result", "Check-in completed successfully!")
-
-    # Create embed with purple color matching your image
-    embed = discord.Embed(
-        title=f"{game_name} Daily Check-In",
-        color=0x9966CC,  # Purple color from your image
-        timestamp=discord.utils.utcnow()
-    )
-
-    # Set author (Paimon APP style from your image)
-    if game_author and game_icon:
-        embed.set_author(
-            name=f"{game_author} APP",
-            icon_url=game_icon
-        )
-
-    # Add account name as description (MazzxE style from your image)
-    embed.description = f"**{account_name}**"
-
-    # Add fields in the exact 3x2 grid layout from your image
-    # Top row: Nickname, UID, Rank
-    embed.add_field(name="Nickname", value=nickname, inline=True)
-    embed.add_field(name="UID", value=uid, inline=True)
-    embed.add_field(name="Rank", value=rank, inline=True)
-
-    # Bottom row: Region, Today's Reward, Total Check-Ins
-    embed.add_field(name="Region", value=region, inline=True)
-    embed.add_field(name="Today's Reward", value=f"{reward_name} x{reward_count}", inline=True)
-    embed.add_field(name="Total Check-Ins", value=total_checkins, inline=True)
-
-    # Result message (full width, like in your image)
-    embed.add_field(name="Result", value=result_message, inline=False)
-
-    # Set thumbnail (Mora icon on the right, like in your image)
-    if reward_icon:
-        embed.set_thumbnail(url=reward_icon)
-
-    # Footer matching your image format
-    embed.set_footer(text=f"{game_name} Daily Check-In")
-
+    # Convert to discord.Embed
+    embed = discord.Embed.from_dict(embed_dict)
     return embed
 
 def get_bot_instance():
