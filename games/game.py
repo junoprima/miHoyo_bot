@@ -3,17 +3,14 @@ import requests
 import json
 import os
 import time
-import asyncio
-from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from utils.discord import send_discord_notification
-from database.operations import db_ops
 
 # Load environment variables
 load_dotenv()
 
 # Get the CONSTANTS_PATH environment variable
-constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")
+constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")  # Default to constants.json if not set
 
 # Helper function to load constants
 def load_constants(file_path):
@@ -26,8 +23,6 @@ def load_constants(file_path):
 constants = load_constants(constants_path)
 print(f"Using constants file at: {constants_path}")
 
-logger = logging.getLogger(__name__)
-
 
 class Game:
     def __init__(self, name, config, cookies):
@@ -35,7 +30,7 @@ class Game:
         self.full_name = config["game"]
         self.config = config
         self.data = cookies
-        self.session = requests.Session()
+        self.session = requests.Session()  # Reuse session for persistent connections
         self.awards = None
 
         if not self.data:
@@ -56,13 +51,16 @@ class Game:
                     "x-rpc-app_version": "2.34.1",
                 }
 
+                logging.debug(f"Attempt {attempt}: Sign request payload: {payload}")
                 response = self.session.post(url, json=payload, headers=headers)
                 response.raise_for_status()
+
                 data = response.json()
+                logging.debug(f"Attempt {attempt}: Sign response: {data}")
 
                 if data["retcode"] == -500012:
                     logging.warning(f"{self.full_name}: Event may be temporarily unavailable. Retrying...")
-                    time.sleep(5)
+                    time.sleep(5)  # Wait before retrying
                     continue
 
                 if data["retcode"] != 0:
@@ -77,172 +75,237 @@ class Game:
                 if attempt == retries:
                     return {"success": False, "message": str(e)}
 
-    def get_sign_info(self, cookie):
-        """Get sign-in information."""
+    def process_account(self, account):
         try:
-            url = self.config["url"]["info"]
-            payload = {"act_id": self.config["ACT_ID"]}
-            headers = {
-                "User-Agent": self.user_agent,
-                "Cookie": cookie,
-                "Content-Type": "application/json",
-            }
+            if not isinstance(account, dict):
+                raise ValueError("Account data should be a dictionary.")
 
-            response = self.session.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-
-            if data["retcode"] != 0:
-                return {"success": False, "message": data.get("message", "Unknown error")}
-
-            return {"success": True, "data": data["data"]}
-
-        except Exception as e:
-            return {"success": False, "message": str(e)}
-
-    def extract_ltuid(self, cookie):
-        """Extract ltuid_v2 from cookie."""
-        try:
-            ltuid_v2 = None
-            for part in cookie.split(';'):
-                if 'ltuid_v2=' in part:
-                    ltuid_v2 = part.split('ltuid_v2=')[1].strip()
-                    break
-            return ltuid_v2
-        except Exception as e:
-            logging.error(f"Error extracting ltuid_v2: {e}")
-            return None
-
-    def get_account_details(self, cookie, ltuid):
-        """Get account details."""
-        try:
-            url = self.config["url"]["home"]
-            headers = {
-                "User-Agent": self.user_agent,
-                "Cookie": cookie,
-                "Content-Type": "application/json",
-            }
-
-            response = self.session.get(f"{url}?uid={ltuid}", headers=headers)
-            response.raise_for_status()
-            data = response.json()
-
-            if data["retcode"] != 0:
-                return None
-
-            account_data = data["data"]
-            return {
-                "uid": account_data.get("uid", ltuid),
-                "nickname": account_data.get("nickname", "Unknown"),
-                "rank": account_data.get("level", 0),
-                "region": account_data.get("region", "Unknown")
-            }
-
-        except Exception as e:
-            logging.error(f"Error getting account details: {e}")
-            return None
-
-    def get_awards_data(self, cookie):
-        """Get awards data."""
-        try:
-            url = f"{self.config['url']['home']}/award"
-            payload = {"act_id": self.config["ACT_ID"]}
-            headers = {
-                "User-Agent": self.user_agent,
-                "Cookie": cookie,
-                "Content-Type": "application/json",
-            }
-
-            response = self.session.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-
-            if data["retcode"] != 0:
-                return {"success": False, "message": data.get("message", "Unknown error")}
-
-            return {"success": True, "data": data["data"]["awards"]}
-
-        except Exception as e:
-            return {"success": False, "message": str(e)}
-
-    @property
-    def user_agent(self):
-        """Get user agent string."""
-        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-
-    def get_sign_game_header(self):
-        """Get sign game header."""
-        return self.config.get("signGameHeader", "")
-
-
-class GameManager:
-    """Game manager for processing check-ins"""
-
-    def __init__(self):
-        self.session = requests.Session()
-
-    async def process_game_checkins(self, guild_id: int, game_name: str, game_config: Dict[str, Any],
-                                  accounts: List[Dict[str, str]]) -> List[Dict[str, Any]]:
-        """Process check-ins for all accounts of a specific game"""
-        successes = []
-
-        # Create Game instance
-        game = Game(game_name, game_config, accounts)
-
-        for account in accounts:
-            try:
-                # Process single account
-                result = await self.process_single_account(guild_id, game, account)
-                if result:
-                    successes.append(result)
-
-                # Small delay between accounts
-                await asyncio.sleep(2)
-
-            except Exception as e:
-                logger.error(f"Error processing account {account.get('name', 'Unknown')}: {e}")
-
-        return successes
-
-    async def process_single_account(self, guild_id: int, game: Game, account: Dict[str, str]) -> Optional[Dict[str, Any]]:
-        """Process check-in for a single account"""
-        try:
-            account_name = account.get("name", "Unknown")
-            cookie = account.get("cookie", "")
-
+            # Fetch and validate the cookie
+            cookie = account.get("cookie")
             if not cookie:
-                logger.warning(f"No cookie provided for account: {account_name}")
+                raise ValueError(f"Missing 'cookie' field in account data: {account}")
+
+            # Log the cookie for debugging
+            logging.debug(f"Cookie used for {self.full_name}: {cookie}")
+
+            name = account.get("name", "Unknown")
+            logging.info(f"Processing account: {name} for {self.full_name}")
+
+            # Fetch sign info
+            sign_info = self.get_sign_info(cookie)
+            if not sign_info["success"]:
+                logging.warning(f"{name}: Failed to retrieve sign info. Reason: {sign_info.get('message', 'Unknown error')}")
                 return None
 
-            logger.info(f"Processing account: {account_name} for {game.full_name}")
+            # Check if already signed in
+            if sign_info["data"]["is_signed"]:
+                logging.info(f"{name}: Already signed in today.")
+                return None
 
-            # For now, just log that we're processing - actual API calls may fail due to cookies
-            logger.info(f"{account_name}: Check-in simulation completed for {game.full_name}")
+            # Fetch account details
+            ltuid = self.extract_ltuid(cookie)
+            if not ltuid:
+                logging.warning(f"{name}: ltuid_v2 is missing or invalid in the cookie.")
+                return None
 
-            # Create a success response for testing
+            account_details = self.get_account_details(cookie, ltuid)
+            if not account_details:
+                logging.warning(f"{name}: Failed to retrieve account details.")
+                return None
+
+            # Fetch awards data if not already loaded
+            if not self.awards:
+                awards_data = self.get_awards_data(cookie)
+                if not awards_data["success"]:
+                    logging.warning(f"{name}: Failed to fetch awards data.")
+                    return None
+                self.awards = awards_data["data"]
+
+            # Determine today's reward
+            total_signed = sign_info["data"]["total"]
+            award_object = {
+                "name": self.awards[total_signed]["name"],
+                "count": self.awards[total_signed]["cnt"],
+                "icon": self.awards[total_signed]["icon"],
+            }
+
+            # Attempt to sign in
+            sign_response = self.sign(cookie)
+            if not sign_response["success"]:
+                logging.warning(f"{name}: Failed to sign in. Reason: {sign_response.get('message', 'Unknown error')}")
+                return None
+
+            # Log success
+            logging.info(
+                f"{name}: Successfully signed in. Today's reward: {award_object['name']} x{award_object['count']}"
+            )
+
+            # Prepare success data
             success_data = {
-                "platform": game.name,
-                "total": 1,
-                "result": f"✅ Check-in simulation completed for {account_name}",
-                "assets": game.config["assets"],
-                "account": {
-                    "nickname": account_name,
-                    "uid": "000000000",
-                    "rank": "1",
-                    "region": "Test"
-                },
-                "award": {
-                    "name": "Test Reward",
-                    "count": "1",
-                    "icon": game.config["assets"]["icon"]
-                },
-                "name": account_name,
+                "platform": self.name,
+                "total": sign_info["data"]["total"] + 1,
+                "result": self.config["successMessage"],
+                "assets": self.config["assets"],
+                "account": account_details,
+                "award": award_object,
+                "name": name,
             }
 
             # Send Discord notification
-            await send_discord_notification(guild_id, success_data)
-            return success_data
+            send_discord_notification(success_data)
 
+            return success_data
         except Exception as e:
-            logger.error(f"Error processing account {account.get('name', 'Unknown')}: {e}")
+            logging.error(f"{self.full_name}: Error processing account: {e}")
             return None
+
+    def check_and_execute(self):
+        """Process all accounts for the current game."""
+        if not self.data:
+            logging.warning(f"No active accounts found for {self.full_name}")
+            return []
+
+        successes = []
+        for account in self.data:
+            result = self.process_account(account)
+            if result:
+                successes.append(result)
+
+        logging.info(f"{self.full_name}: All accounts processed.")
+        return successes
+
+    def extract_ltuid(self, cookie):
+        """Extract ltuid_v2 from the cookie."""
+        ltuid = next(
+            (item.split("=")[1] for item in cookie.split(";") if "ltuid_v2" in item),
+            None,
+        )
+        logging.debug(f"Extracted ltuid_v2 for {self.full_name}: {ltuid}")
+        if not ltuid:
+            logging.warning(f"{self.full_name}: ltuid_v2 is missing from the cookie!")
+        return ltuid
+
+    def get_account_details(self, cookie, ltuid):
+        """Retrieve account details for the given cookie and ltuid."""
+        try:
+            url = f"https://bbs-api-os.hoyolab.com/game_record/card/wapi/getGameRecordCard?uid={ltuid}"
+            headers = {"User-Agent": self.user_agent, "Cookie": cookie}
+            logging.debug(f"Fetching account details for {self.full_name} with URL: {url}")
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logging.debug(f"Account details response: {data}")
+
+            if data["retcode"] != 0:
+                logging.warning(f"{self.full_name}: Error fetching account details. Retcode: {data['retcode']}, Message: {data['message']}")
+                return None
+
+            # Extract account details for the specific game ID
+            account_data = next(
+                (acc for acc in data["data"]["list"] if acc["game_id"] == self.config["gameId"]), None
+            )
+            if not account_data:
+                logging.warning(f"{self.full_name}: No account data found for game_id: {self.config['gameId']}.")
+                return None
+
+            return {
+                "uid": account_data["game_role_id"],
+                "nickname": account_data["nickname"],
+                "rank": account_data["level"],
+                "region": self.fix_region(account_data["region"]),
+            }
+        except Exception as e:
+            logging.error(f"{self.full_name}: Error fetching account details: {e}")
+            return None
+        
+    def fix_region(self, region):
+        logging.debug(f"Mapping region code: {region}")
+        """Map the region code to a user-friendly region name."""
+        if region in ["os_cht", "prod_gf_sg", "prod_official_cht"]:
+            return "TW"  # Taiwan
+        elif region in ["os_asia", "prod_gf_jp", "prod_official_asia"]:
+            return "SEA"  # Southeast Asia
+        elif region in ["eur01", "os_euro", "prod_gf_eu", "prod_official_eur"]:
+            return "EU"  # Europe
+        elif region in ["usa01", "os_usa", "prod_gf_us", "prod_official_usa"]:
+            return "NA"  # North America
+        else:
+            return "Unknown"
+
+    def get_sign_info(self, cookie):
+        """Retrieve sign-in info for the account."""
+        try:
+            url = f"{self.config['url']['info']}?act_id={self.config['ACT_ID']}"
+            headers = {"Cookie": cookie, "x-rpc-signgame": self.get_sign_game_header()}
+            logging.debug(f"Sign info request URL: {url}")
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+
+            if data["retcode"] != 0:
+                logging.warning(f"{self.full_name}: Error getting sign info. Response: {data}")
+                return {"success": False, "message": data["message"]}
+
+            return {
+                "success": True,
+                "data": {
+                    "total": data["data"]["total_sign_day"],
+                    "today": data["data"]["today"],
+                    "is_signed": data["data"]["is_sign"],
+                },
+            }
+        except Exception as e:
+            logging.error(f"{self.full_name}: Error getting sign info: {e}")
+            return {"success": False, "message": str(e)}
+
+    def get_awards_data(self, cookie):
+        """Retrieve awards data for the account."""
+        try:
+            url = f"{self.config['url']['home']}?act_id={self.config['ACT_ID']}"
+            headers = {
+                "Cookie": cookie,
+                "x-rpc-signgame": self.get_sign_game_header(),
+                "User-Agent": self.user_agent,
+            }
+
+            logging.debug(f"Awards data request URL: {url}")
+            logging.debug(f"Awards data request headers: {headers}")
+
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logging.debug(f"Awards data response: {data}")
+
+            if data["retcode"] != 0:
+                logging.warning(
+                    f"{self.full_name}: Error getting awards data. Retcode: {data['retcode']}, Message: {data['message']}"
+                )
+                return {"success": False}
+
+            if not data.get("data", {}).get("awards"):
+                logging.warning(f"{self.full_name}: No awards data found.")
+                return {"success": False, "data": []}
+
+            return {"success": True, "data": data["data"]["awards"]}
+        except Exception as e:
+            logging.error(f"{self.full_name}: Error getting awards data: {e}")
+            return {"success": False, "data": []}
+
+    def get_sign_game_header(self):
+        """Return the x-rpc-signgame header based on the game configuration."""
+        header = self.config.get("signGameHeader")
+        if not header:
+            logging.warning(f"{self.full_name}: Missing 'signGameHeader' configuration. Falling back to default.")
+            header = "default-header"  # Replace with an appropriate fallback value
+        return header
+
+
+    @property
+    def user_agent(self):
+        """Return a standard user agent."""
+        return (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/110.0.0.0 Safari/537.36"
+        )

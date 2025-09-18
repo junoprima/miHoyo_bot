@@ -5,3 +5,5 @@ asyncpg
 sqlalchemy[asyncio]
 alembic
 cryptography
+aiosqlite
+aiohttp
