@@ -51,60 +51,38 @@ async def send_discord_notification(guild_id: int, success_data: Dict[str, Any])
         logger.error(f"Error sending Discord notification: {e}")
         return False
 
-def create_checkin_embed(data: Dict[str, Any]):
-    """Create Discord embed for check-in results"""
+def create_checkin_embed(success_data: Dict[str, Any]):
+    """Create Discord embed using original format from before 2025-09-17"""
     import discord
+    from datetime import datetime, timezone
 
-    # Extract data with fallbacks
-    account_name = data.get('account_name', data.get('name', 'Unknown Account'))
-    game_name = data.get('game_name', 'Unknown Game')
-    reward_name = data.get('reward_name', 'Unknown Reward')
-    reward_count = data.get('reward_count', 0)
-    total_checkins = data.get('total_checkins', data.get('total', 0))
-    already_signed = data.get('already_signed', False)
+    embed_dict = {
+        "color": 16748258,
+        "title": f"{success_data['assets']['game']} Daily Check-In",
+        "author": {
+            "name": success_data["name"],
+            "icon_url": success_data["assets"]["icon"]
+        },
+        "fields": [
+            {"name": "Nickname", "value": success_data["account"]["nickname"], "inline": True},
+            {"name": "UID", "value": success_data["account"]["uid"], "inline": True},
+            {"name": "Rank", "value": success_data["account"]["rank"], "inline": True},
+            {"name": "Region", "value": success_data["account"]["region"], "inline": True},
+            {
+                "name": "Today's Reward",
+                "value": f"{success_data['award']['name']} x{success_data['award']['count']}",
+                "inline": True,
+            },
+            {"name": "Total Check-Ins", "value": success_data["total"], "inline": True},
+            {"name": "Result", "value": success_data["result"], "inline": False},
+        ],
+        "thumbnail": {"url": success_data["award"]["icon"]},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "footer": {"text": f"{success_data['assets']['game']} Daily Check-In"},
+    }
 
-    # Set color and status based on result
-    if already_signed:
-        color = 0xFFA500  # Orange
-        status = "✅ Already Checked In Today"
-        emoji = "⭐"
-    else:
-        color = 0x00FF00  # Green
-        status = "🎉 Check-in Successful!"
-        emoji = "🎁"
-
-    embed = discord.Embed(
-        title=f"🎮 {game_name} Daily Check-in",
-        description=status,
-        color=color
-    )
-
-    # Account info
-    embed.add_field(
-        name="👤 Account",
-        value=f"`{account_name}`",
-        inline=True
-    )
-
-    # Reward info
-    if reward_name and reward_count:
-        embed.add_field(
-            name=f"{emoji} Today's Reward",
-            value=f"`{reward_name}` x**{reward_count}**",
-            inline=True
-        )
-
-    # Total check-ins
-    embed.add_field(
-        name="📅 Total Check-ins",
-        value=f"**{total_checkins}**",
-        inline=True
-    )
-
-    # Footer and timestamp
-    embed.set_footer(text="miHoYo Auto Check-in • Use /set_channel to configure notifications")
-    embed.timestamp = discord.utils.utcnow()
-
+    # Convert to discord.Embed
+    embed = discord.Embed.from_dict(embed_dict)
     return embed
 
 def get_bot_instance():
