@@ -401,6 +401,36 @@ class DatabaseOperations:
 
             return setting.setting_value if setting else default
 
+    async def update_account_cookie(self, guild_id: int, user_id: int, game_name: str, account_name: str, new_cookie: str) -> bool:
+        """Update account cookie"""
+        async with db_manager.get_session() as session:
+            # Get the game
+            game = await self.get_game_by_name(game_name)
+            if not game:
+                return False
+
+            # Find and update the account
+            stmt = (
+                update(Account)
+                .where(
+                    and_(
+                        Account.guild_id == guild_id,
+                        Account.user_id == user_id,
+                        Account.game_id == game.id,
+                        Account.name == account_name,
+                        Account.is_active == True
+                    )
+                )
+                .values(
+                    cookie=new_cookie,
+                    updated_at=datetime.utcnow()
+                )
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+
+            return result.rowcount > 0
+
 
 # Global instance
 db_ops = DatabaseOperations()

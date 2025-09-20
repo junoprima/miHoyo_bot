@@ -60,40 +60,6 @@ class Game:
         except Exception as e:
             return {"success": False, "message": str(e)}
 
-    def get_account_details(self, cookie, ltuid):
-        """Retrieve account details - FIXED to use original working API"""
-        try:
-            url = f"https://bbs-api-os.hoyolab.com/game_record/card/wapi/getGameRecordCard?uid={ltuid}"
-            headers = {
-                "User-Agent": self.user_agent,
-                "Cookie": cookie
-            }
-
-            response = self.session.get(url, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-
-            if data["retcode"] != 0:
-                return None
-
-            # Extract account info from the response
-            accounts = data["data"]["list"]
-            if not accounts:
-                return None
-
-            # Find the account for this game
-            account_data = accounts[0]  # Use first account
-            return {
-                "uid": account_data.get("game_role_id", ltuid),
-                "nickname": account_data.get("nickname", "Unknown"),
-                "rank": account_data.get("level", 0),
-                "region": account_data.get("region_name", account_data.get("region_name", "Unknown"))
-            }
-
-        except Exception as e:
-            logging.error(f"Error getting account details: {e}")
-            return None
-
     def sign(self, cookie, retries=2):
         """Sign in to the game with retry logic."""
         for attempt in range(1, retries + 1):
@@ -143,10 +109,38 @@ class Game:
             logging.error(f"Error extracting ltuid_v2: {e}")
             return None
 
+    def get_account_details(self, cookie, ltuid):
+        """Get account details."""
+        try:
+            url = self.config["url"]["home"]
+            headers = {
+                "User-Agent": self.user_agent,
+                "Cookie": cookie,
+            }
+
+            response = self.session.get(f"{url}?uid={ltuid}", headers=headers)
+            response.raise_for_status()
+            data = response.json()
+
+            if data["retcode"] != 0:
+                return None
+
+            account_data = data["data"]
+            return {
+                "uid": account_data.get("uid", ltuid),
+                "nickname": account_data.get("nickname", "Unknown"),
+                "rank": account_data.get("level", 0),
+                "region": account_data.get("region", "Unknown")
+            }
+
+        except Exception as e:
+            logging.error(f"Error getting account details: {e}")
+            return None
+
     def get_awards_data(self, cookie):
         """Get awards data - using GET method"""
         try:
-            url = f"{self.config["url"]["home"]}?act_id={self.config['ACT_ID']}"
+            url = f"{self.config['url']['home']}/award?act_id={self.config['ACT_ID']}"
             headers = {
                 "User-Agent": self.user_agent,
                 "Cookie": cookie,

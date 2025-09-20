@@ -1,9 +1,9 @@
 from discord import app_commands, Interaction
-from utils.firestore import edit_cookie_in_firestore
-from utils.autocomplete import game_autocomplete, account_autocomplete
+from utils.database_simple import edit_cookie_in_database_simple
+from utils.autocomplete_fixed import game_autocomplete, account_autocomplete
 import logging
 
-@app_commands.command(name="edit_cookie", description="Edit an existing cookie in Firestore")
+@app_commands.command(name="edit_cookie", description="Edit an existing cookie in database")
 @app_commands.describe(
     game="Select a game",
     account="Select an account",
@@ -11,10 +11,10 @@ import logging
 )
 @app_commands.autocomplete(game=game_autocomplete, account=account_autocomplete)
 async def command(interaction: Interaction, game: str, account: str, new_cookie: str):
-    """Edits an existing cookie in Firestore."""
+    """Edits an existing cookie in database."""
     logging.info(f"Executing 'edit_cookie' with game={game}, account={account}, new_cookie={new_cookie}")
     try:
-        success = edit_cookie_in_firestore(game, account, new_cookie)
+        success = edit_cookie_in_database_simple(game, account, new_cookie)
         if success:
             await interaction.response.send_message(
                 f"Cookie for account '{account}' in '{game}' updated successfully!"

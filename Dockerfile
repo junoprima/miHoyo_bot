@@ -44,4 +44,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import sqlite3; sqlite3.connect('/app/data/mihoyo_bot.db').execute('SELECT 1')" || exit 1
 
 # Default command
-CMD ["python", "-m", "discord_bot.bot_new"]
+CMD ["python", "-m", "discord_bot.bot"]

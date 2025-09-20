@@ -1,11 +1,11 @@
 from discord import app_commands
 from discord import Interaction
-from utils.firestore import fetch_cookies_from_firestore
+from utils.database_simple import fetch_cookies_from_database
 import logging
 
 async def game_autocomplete(interaction: Interaction, current: str):
     logging.info(f"Autocomplete triggered with input: '{current}'")
-    games = fetch_cookies_from_firestore().keys()  # Fetch all available games from Firestore
+    games = fetch_cookies_from_database().keys()  # Fetch all available games from database
     logging.info(f"Autocomplete fetched games: {games}")
     return [
         app_commands.Choice(name=game, value=game)
@@ -22,7 +22,7 @@ async def account_autocomplete(interaction: Interaction, current: str):
         logging.warning("No game selected for account autocomplete.")
         return []
 
-    cookies = fetch_cookies_from_firestore()
+    cookies = fetch_cookies_from_database()
     accounts = [
         account["name"]
         for account in cookies.get(selected_game, [])
