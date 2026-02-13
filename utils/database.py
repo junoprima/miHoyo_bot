@@ -1,6 +1,6 @@
 import logging
 async def fetch_all_games():
-    return ["genshin", "starrail", "zenless", "honkai"]
+    return ["genshin", "starrail", "zenless", "honkai", "endfield"]
 
 async def get_guild_accounts(guild_id, game):
     from database.operations import db_ops

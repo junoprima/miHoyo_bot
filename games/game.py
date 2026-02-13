@@ -7,6 +7,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 import discord
+from games.endfield_adapter import EndfieldAdapter
 
 load_dotenv()
 constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")
@@ -96,6 +97,11 @@ class Game:
 
     def sign(self, cookie, retries=2):
         """Sign in to the game with retry logic."""
+        # Check if this is Endfield (uses SKPort API)
+        if self.config.get("api_type") == "skport":
+            return self._sign_endfield(cookie)
+
+        # Original miHoYo sign logic
         for attempt in range(1, retries + 1):
             try:
                 url = self.config["url"]["sign"]
@@ -129,6 +135,25 @@ class Game:
                 logging.error(f"{self.full_name}: Error signing in on attempt {attempt}: {e}")
                 if attempt == retries:
                     return {"success": False, "message": str(e)}
+
+    def _sign_endfield(self, account_token: str) -> dict:
+        """Handle Endfield check-in using SKPort API"""
+        try:
+            adapter = EndfieldAdapter(account_token)
+            result = adapter.perform_checkin()
+
+            # Convert to miHoYo-compatible format
+            return {
+                "success": result["success"],
+                "message": result.get("message", "Unknown error"),
+                "already_signed": result.get("already_signed", False),
+                "reward": result.get("reward"),
+                "total_sign_day": result.get("total_sign_day", 0)
+            }
+
+        except Exception as e:
+            logging.error(f"{self.full_name}: Endfield check-in error: {e}")
+            return {"success": False, "message": str(e)}
 
     def extract_ltuid(self, cookie):
         """Extract ltuid_v2 from cookie."""
@@ -186,6 +211,11 @@ class Game:
                 logging.warning(f"{name}: No cookie provided")
                 return None
 
+            # Check if this is Endfield (different flow)
+            if self.config.get("api_type") == "skport":
+                return await self._process_endfield_account(account, guild_id)
+
+            # Original miHoYo flow
             # Get sign info
             sign_info = self.get_sign_info(cookie)
             if not sign_info["success"]:
@@ -259,6 +289,66 @@ class Game:
 
         except Exception as e:
             logging.error(f"Error processing account {account.get('name', 'Unknown')}: {e}")
+            return None
+
+    async def _process_endfield_account(self, account, guild_id):
+        """Process Endfield account (different from miHoYo)"""
+        try:
+            name = account.get("name", "Unknown")
+            account_token = account.get("cookie", "")  # "cookie" field stores token for Endfield
+
+            logging.info(f"Processing Endfield account: {name}")
+
+            # Perform check-in
+            sign_response = self.sign(account_token)
+
+            if not sign_response["success"]:
+                logging.warning(f"{name}: Endfield check-in failed. Reason: {sign_response.get('message', 'Unknown error')}")
+                return None
+
+            # Check if already signed
+            if sign_response.get("already_signed"):
+                logging.info(f"{name}: Already checked in today.")
+                return {
+                    "name": name,
+                    "status": "already_signed",
+                    "total": sign_response.get("total_sign_day", 0),
+                    "game": self.full_name
+                }
+
+            # Get reward info
+            reward = sign_response.get("reward", {})
+            if not reward:
+                reward = {"name": "Unknown", "count": 0, "icon": ""}
+
+            # Create success data (adapted for Endfield)
+            success_data = {
+                "platform": self.name,
+                "total": sign_response.get("total_sign_day", 0),
+                "result": self.config["successMessage"],
+                "assets": self.config["assets"],
+                "account": {
+                    "uid": "N/A",  # Endfield doesn't provide UID in check-in response
+                    "nickname": name,
+                    "rank": "N/A",
+                    "region": "Global"
+                },
+                "award": {
+                    "name": reward.get("name", "Unknown"),
+                    "count": reward.get("count", 0),
+                    "icon": reward.get("icon", "")
+                },
+                "name": name,
+            }
+
+            # Send Discord notification
+            await self.send_discord_notification_direct(guild_id, success_data)
+
+            logging.info(f"{name}: Endfield check-in successful. Reward: {reward.get('name')} x{reward.get('count')}")
+            return success_data
+
+        except Exception as e:
+            logging.error(f"Error processing Endfield account {account.get('name', 'Unknown')}: {e}")
             return None
 
     async def send_discord_notification_direct(self, guild_id, success_data):
