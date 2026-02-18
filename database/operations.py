@@ -138,12 +138,15 @@ class DatabaseOperations:
         return self._game_cache.get(game_name)
 
     async def get_game_config(self, game_name: str) -> Optional[Dict[str, Any]]:
-        """Get game configuration in legacy format for compatibility"""
+        """Get game configuration with api_type from constants.json"""
+        import json
+        import os
+
         game = await self.get_game_by_name(game_name)
         if not game:
             return None
 
-        return {
+        config = {
             "ACT_ID": game.act_id,
             "signGameHeader": game.sign_game_header,
             "successMessage": game.success_message,
@@ -162,6 +165,18 @@ class DatabaseOperations:
             }
         }
 
+        # Load api_type from constants.json if available
+        try:
+            constants_path = os.getenv("CONSTANTS_PATH", "/app/constants.json")
+            with open(constants_path, "r") as f:
+                constants = json.load(f)
+            if game_name in constants and "api_type" in constants[game_name]:
+                config["api_type"] = constants[game_name]["api_type"]
+        except Exception:
+            pass  # Continue without api_type if constants.json not available
+
+        return config
+
     # === ACCOUNT OPERATIONS ===
     async def add_account(self, guild_id: int, user_id: int, game_name: str,
                          account_name: str, cookie: str) -> Account:
@@ -176,7 +191,7 @@ class DatabaseOperations:
             stmt = select(Account).where(
                 and_(
                     Account.guild_id == guild_id,
-                    Account.user_id == user_id,
+                    # Account.user_id == user_id,  # Removed: allow admin to delete any account
                     Account.game_id == game.id,
                     Account.name == account_name
                 )
@@ -310,7 +325,7 @@ class DatabaseOperations:
             stmt = delete(Account).where(
                 and_(
                     Account.guild_id == guild_id,
-                    Account.user_id == user_id,
+                    # Account.user_id == user_id,  # Removed: allow admin to delete any account
                     Account.game_id == game.id,
                     Account.name == account_name
                 )
@@ -415,7 +430,7 @@ class DatabaseOperations:
                 .where(
                     and_(
                         Account.guild_id == guild_id,
-                        Account.user_id == user_id,
+                        # Account.user_id == user_id,  # Removed: allow admin to delete any account
                         Account.game_id == game.id,
                         Account.name == account_name,
                         Account.is_active == True

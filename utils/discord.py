@@ -53,28 +53,9 @@ async def send_discord_notification(guild_id: int, success_data: Dict[str, Any])
         except Exception:
             pass  # Ignore other errors
 
-        # Try to update bot avatar to game character avatar (rate limited)
-        try:
-            if game_character_avatar and bot_instance.user.avatar:
-                # Check if current avatar URL matches the game character
-                current_avatar_url = str(bot_instance.user.avatar.url)
-                if game_character_avatar not in current_avatar_url:
-                    # Download the new avatar image
-                    import aiohttp
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(game_character_avatar) as resp:
-                            if resp.status == 200:
-                                avatar_data = await resp.read()
-                                await bot_instance.user.edit(avatar=avatar_data)
-                                logger.info(f"Updated bot avatar to {game_character_name}")
-        except discord.HTTPException as e:
-            if e.status == 429:  # Rate limited
-                logger.warning("Avatar update rate limited - will use current avatar")
-            else:
-                logger.warning(f"Could not update avatar: {e}")
-        except Exception as e:
-            logger.warning(f"Avatar update failed: {e}")
-            pass  # Ignore avatar update errors
+        # Avatar changing disabled - use fixed avatar from Discord Developer Portal
+        # The bot will keep whatever avatar you set in the Discord Developer Portal
+        pass
 
         # Create embed
         embed = create_checkin_embed(success_data)

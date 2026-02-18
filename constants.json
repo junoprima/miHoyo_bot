@@ -70,24 +70,5 @@
             "home": "https://sg-public-api.hoyolab.com/event/luna/os/home",
             "sign": "https://sg-public-api.hoyolab.com/event/luna/os/sign"
         }
-    },
-    "endfield": {
-        "ACT_ID": "skport_endfield_attendance",
-        "signGameHeader": "endfield",
-        "successMessage": "Attendance claimed successfully, Doctor~",
-        "signedMessage": "You've already checked in today, Doctor~",
-        "game": "Arknights: Endfield",
-        "gameId": 10,
-        "api_type": "skport",
-        "assets": {
-            "author": "Endfield Assistant",
-            "game": "Arknights: Endfield",
-            "icon": "https://play-lh.googleusercontent.com/IHJeGhqSpth4VzATp_afjsCnFRc-uYgGC1EV3b2tryjyZsVrbcaeN5L_m8VKwvOSpIu_Skc49mDpLsAzC6Jl3mM"
-        },
-        "url": {
-            "info": "https://zonai.skport.com/web/v1/game/endfield/attendance",
-            "home": "https://zonai.skport.com/web/v1/game/endfield/attendance",
-            "sign": "https://zonai.skport.com/web/v1/game/endfield/attendance"
-        }
     }
 }

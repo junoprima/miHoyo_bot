@@ -341,8 +341,8 @@ class Game:
                 "name": name,
             }
 
-            # Send Discord notification
-            await self.send_discord_notification_direct(guild_id, success_data)
+            # Send Discord notification (use Endfield channel)
+            await self.send_discord_notification_direct(guild_id, success_data, is_endfield=True)
 
             logging.info(f"{name}: Endfield check-in successful. Reward: {reward.get('name')} x{reward.get('count')}")
             return success_data
@@ -351,13 +351,30 @@ class Game:
             logging.error(f"Error processing Endfield account {account.get('name', 'Unknown')}: {e}")
             return None
 
-    async def send_discord_notification_direct(self, guild_id, success_data):
+    async def send_discord_notification_direct(self, guild_id, success_data, is_endfield=False):
         """Send Discord notification directly using bot token"""
         try:
             token = os.getenv("DISCORD_BOT_TOKEN")
             if not token:
                 logging.error("Discord bot token not found")
                 return
+
+            # Get appropriate channel
+            from database.operations import db_ops
+            if is_endfield:
+                # Try Endfield-specific channel first, fall back to main check-in channel
+                channel_id_str = await db_ops.get_guild_setting(guild_id, "channel_endfield")
+                if not channel_id_str:
+                    channel_id_str = await db_ops.get_guild_setting(guild_id, "channel_checkin")
+            else:
+                # Use main check-in channel for miHoYo games
+                channel_id_str = await db_ops.get_guild_setting(guild_id, "channel_checkin")
+
+            if not channel_id_str:
+                logging.error(f"No notification channel configured for guild {guild_id}")
+                return
+
+            notification_channel_id = int(channel_id_str)
 
             intents = discord.Intents.default()
             client = discord.Client(intents=intents)
@@ -366,11 +383,10 @@ class Game:
             async def on_ready():
                 try:
                     # Get channel
-                    channel_id = 1417879161082613943
-                    channel = client.get_channel(channel_id)
+                    channel = client.get_channel(notification_channel_id)
 
                     if not channel:
-                        logging.error(f"Channel {channel_id} not found")
+                        logging.error(f"Channel {notification_channel_id} not found")
                         await client.close()
                         return
 
